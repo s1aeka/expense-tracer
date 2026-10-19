@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Expense Tracker — Stage 1</title>
+  <style>body{font-family:Arial;padding:16px}label,input{display:block;margin:8px 0}</style>
+</head>
+<body>
+  <h1>Expense Tracker</h1>
+  <label>Добавить трату
+    <input id="text" placeholder="обед 10 ринг, кола полторашка 5 ринг, такси 2000 тг" style="width:80%">
+  </label>
+  <button id="add">Добавить</button>
+  <div id="msg" style="color:red;margin-top:8px"></div>
+  <h2>Сегодня</h2>
+  <ul id="list"></ul>
+  <h2>Итоги</h2>
+  <pre id="totals"></pre>
+
+  <script>
+    async function refresh(){
+      const res = await fetch('/api/expenses/today');
+      const items = await res.json();
+      const list = document.getElementById('list'); list.innerHTML='';
+      for(const it of items){
+        const li = document.createElement('li');
+        li.textContent = `${it.name} — ${it.amount} ${it.currency} — ${it.category}`;
+        const del = document.createElement('button'); del.textContent='Удалить';
+        del.onclick = async ()=>{ await fetch('/api/expense/'+it.id,{method:'DELETE'}); refresh(); };
+        li.appendChild(del);
+        list.appendChild(li);
+      }
+      const t = await fetch('/api/totals');
+      document.getElementById('totals').textContent = JSON.stringify(await t.json(),null,2);
+    }
+    document.getElementById('add').onclick = async ()=>{
+      const text = (document.getElementById('text') as HTMLInputElement).value;
+      const res = await fetch('/api/add',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});
+      if(res.status===200){ document.getElementById('msg').textContent=''; (document.getElementById('text') as HTMLInputElement).value=''; refresh(); }
+      else{ document.getElementById('msg').textContent = 'не понял, перепиши'; }
+    };
+    refresh();
+  </script>
+</body>
+</html>
